@@ -23,10 +23,25 @@ function checkLocation(position) {
       title: '您的位置',
       icon: {
         url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-      }
+      },
+      // 加入精確度圓圈
+      circle: new google.maps.Circle({
+        map: map,
+        radius: position.coords.accuracy, // 使用定位精確度作為半徑
+        fillColor: '#0000FF',
+        fillOpacity: 0.1,
+        strokeColor: '#0000FF',
+        strokeOpacity: 0.5,
+        strokeWeight: 1
+      })
     });
   } else {
     userMarker.setPosition(userPosition);
+    // 更新精確度圓圈
+    if (userMarker.circle) {
+      userMarker.circle.setCenter(userPosition);
+      userMarker.circle.setRadius(position.coords.accuracy);
+    }
   }
 
   // 保持地圖中心在指定位置
