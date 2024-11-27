@@ -1,72 +1,10 @@
-// 指定地點的座標
-const TARGET_LOCATION = {
-  lat: 25.044798,  // 替換成你的目標緯度
-  lng: 121.560164 // 替換成你的目標經度
-};
-
-const RADIUS = 50; // 半徑（公尺）
-
-let map;
-let userMarker;
-let targetMarker;
-let boundaryShape;
-
-// 初始化地圖
-function initMap() {
-  map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 18,
-    center: TARGET_LOCATION,
-    mapTypeId: 'roadmap'
-  });
-
-  // 添加目標位置標記
-  targetMarker = new google.maps.Marker({
-    position: TARGET_LOCATION,
-    map: map,
-    title: '目標位置',
-    icon: {
-      url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-    }
-  });
-
-  // 定義多邊形範圍（例如：矩形區域）
-  const bounds = [
-    { lat: TARGET_LOCATION.lat + 0.00012, lng: TARGET_LOCATION.lng + 0.00018 }, // 右上
-    { lat: TARGET_LOCATION.lat + 0.000125, lng: TARGET_LOCATION.lng - 0.00018 }, // 左上
-    { lat: TARGET_LOCATION.lat - 0.0005, lng: TARGET_LOCATION.lng - 0.00019 }, // 左下
-    { lat: TARGET_LOCATION.lat - 0.0005, lng: TARGET_LOCATION.lng + 0.000175 }  // 右下
-  ];
-
-  // 創建多邊形
-  boundaryShape = new google.maps.Polygon({
-    paths: bounds,
-    map: map,
-    fillColor: '#FF0000',
-    fillOpacity: 0.2,
-    strokeColor: '#FF0000',
-    strokeOpacity: 1,
-    strokeWeight: 2
-  });
-}
-
-// 計算兩點之間的距離（使用 Haversine 公式）
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // 地球半徑（公尺）
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-          Math.cos(φ1) * Math.cos(φ2) *
-          Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R * c; // 返回公尺
-}
-
-// 檢查是否在範圍內
 function checkLocation(position) {
+  console.log('收到位置更新：', {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: position.coords.accuracy
+  });
+
   const userLatLng = new google.maps.LatLng(
     position.coords.latitude,
     position.coords.longitude
@@ -122,12 +60,23 @@ function showNotification(title, message) {
   }
 }
 
-// 開始追蹤位置
-function startLocationTracking() {
-  // 初始化地圖
-  if (!map) {
-    initMap();
+// 初始化並開始追蹤位置
+async function startLocationTracking() {
+  // 先請求位置權限
+  try {
+    const permission = await requestLocationPermission();
+    if (permission !== 'granted') {
+      showNotification('錯誤', '需要位置權限才能繼續');
+      return;
+    }
+  } catch (error) {
+    console.error('請求位置權限失敗：', error);
+    showNotification('錯誤', '無法取得位置權限');
+    return;
   }
+
+  // 初始化地圖
+  initMap();
 
   if ('geolocation' in navigator) {
     navigator.geolocation.watchPosition(
@@ -138,7 +87,7 @@ function startLocationTracking() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000,
         maximumAge: 0
       }
     );
@@ -146,6 +95,33 @@ function startLocationTracking() {
     showNotification('錯誤', '此瀏覽器不支援位置追蹤');
   }
 }
+
+// 請求位置權限
+function requestLocationPermission() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('瀏覽器不支援地理位置功能'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => resolve('granted'),
+      (error) => {
+        console.error('位置權限錯誤：', error);
+        reject(error);
+      },
+      { enableHighAccuracy: true }
+    );
+  });
+}
+
+// 頁面載入完成後自動開始
+window.addEventListener('load', () => {
+  startLocationTracking().catch(error => {
+    console.error('初始化錯誤：', error);
+    showNotification('錯誤', '初始化失敗，請重新整理頁面');
+  });
+});
 
 // 添加更新半徑的函數
 function updateRadius(newRadius) {
