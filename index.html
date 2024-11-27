@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>位置追蹤</title>
+    <style>
+        #status {
+            padding: 20px;
+            margin: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">等待位置資訊...</div>
+    <div id="map"></div>
+    <button onclick="startLocationTracking()">開始追蹤位置</button>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBLsVHrQ3Wk9OEfNh2n5EqlGtn1G90pp3g&libraries=geometry"></script>
+    <script src="location-checker.js"></script>
+</body>
+</html> 
